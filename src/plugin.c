@@ -104,9 +104,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 	int devices = comEnumerate();
 
 	for (int i=0; i<comGetNoPorts(); i++)
-	{
 		printf("com[%i]: %s\n", i, comGetPortName(i));
-	}
 
 	printf("Found %i serial devices\n", devices);
 
@@ -186,7 +184,7 @@ EXPORT void CALL InitiateControllers(CONTROL_INFO ControlInfo)
 				controller[i].control->Present = 1;
 				controller[i].control->RawData = 1;
 				controller[i].control->Plugin = PLUGIN_NONE;
-				controller[0].serial = port;
+				controller[i].serial = port;
 			}
 		}
 	}
@@ -210,7 +208,7 @@ EXPORT void CALL InitiateControllers(CONTROL_INFO ControlInfo)
 						initilize controller: 01 03 00 FF FF FF
 						read controller:      01 04 01 FF FF FF FF
 *******************************************************************/
-EXPORT void CALL ControllerCommand(int Control, unsigned char *Command)
+EXPORT void CALL ControllerCommand(int index, unsigned char *cmd)
 {
 }
 
@@ -225,22 +223,22 @@ EXPORT void CALL ControllerCommand(int Control, unsigned char *Command)
 	note:     This function is only needed if the DLL is allowing raw
 						data.
 *******************************************************************/
-EXPORT void CALL ReadController(int Control, unsigned char *Command)
+EXPORT void CALL ReadController(int index, unsigned char *cmd)
 {
-	if (Command == NULL || Control != 0)
+	if (cmd == NULL || !controller[index].control->Present)
 		return;
 
-	unsigned char tx_len = Command[0] & 0x3F;
-	unsigned char rx_len = Command[1] & 0x3F;
+	unsigned char tx_len = cmd[0] & 0x3F;
+	unsigned char rx_len = cmd[1] & 0x3F;
 
-	unsigned char *rx_data = Command + 2 + tx_len;
+	unsigned char *rx_data = cmd + 2 + tx_len;
 
-	comWrite(controller[0].serial, (const char*) Command, 2 + tx_len);
+	comWrite(controller[index].serial, (const char*) cmd, 2 + tx_len);
 
 	char buffer[rx_len];
 	memset(buffer, 0, sizeof(buffer));
 
-	comRead(controller[0].serial, buffer, rx_len);
+	comRead(controller[index].serial, buffer, rx_len);
 
 	memcpy(rx_data, buffer, rx_len);
 }
@@ -275,7 +273,7 @@ EXPORT void CALL RomClosed(void)
 						the controller state.
 	output:   none
 *******************************************************************/
-EXPORT void CALL GetKeys(int Control, BUTTONS *Keys )
+EXPORT void CALL GetKeys(int index, BUTTONS *keys)
 {
 }
 
