@@ -6,7 +6,8 @@
 #include "m64p_types.h"
 #include "m64p_config.h"
 
-# ifdef _WIN32
+#ifdef _WIN32
+#include <Windows.h>
 #define DLSYM(a, b) GetProcAddress(a, b)
 #else
 #include <dlfcn.h>

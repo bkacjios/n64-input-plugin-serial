@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>
-#include <sys/socket.h>
-
 #include "plugin.h"
 #include "version.h"
 #include "rs232.h"
@@ -229,13 +226,15 @@ EXPORT void CALL ReadController(int index, unsigned char *cmd)
 		return;
 
 	unsigned char tx_len = cmd[0] & 0x3F;
-	unsigned char rx_len = cmd[1] & 0x3F;
+	const unsigned char rx_len = cmd[1] & 0x3F;
+
+	const int len_thing = cmd[1] & 0x3F;
 
 	unsigned char *rx_data = cmd + 2 + tx_len;
 
 	comWrite(controller[index].serial, (const char*) cmd, 2 + tx_len);
 
-	char buffer[rx_len];
+	char buffer[33];
 	memset(buffer, 0, sizeof(buffer));
 
 	comRead(controller[index].serial, buffer, rx_len);

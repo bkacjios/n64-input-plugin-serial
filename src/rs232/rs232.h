@@ -39,6 +39,7 @@ extern "C" {
 
     #include <stdint.h>
     #include <stdlib.h>
+	#include <Windows.h>
 
 /*****************************************************************************/
     /* Doxywizard specific */
