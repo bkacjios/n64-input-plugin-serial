@@ -8,7 +8,7 @@
 #include "rs232.h"
 
 /* global data definitions */
-SController controller[4];  // 1 controller
+SController controller[4];  // 4 controllers
 
 /* static data definitions */
 static void (*l_DebugCallback)(void *, int, const char *) = NULL;
@@ -227,8 +227,6 @@ EXPORT void CALL ReadController(int index, unsigned char *cmd)
 
 	unsigned char tx_len = cmd[0] & 0x3F;
 	const unsigned char rx_len = cmd[1] & 0x3F;
-
-	const int len_thing = cmd[1] & 0x3F;
 
 	unsigned char *rx_data = cmd + 2 + tx_len;
 
