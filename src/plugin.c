@@ -7,9 +7,18 @@
 #include "version.h"
 #include "rs232.h"
 
+#ifdef PROJECT_64
+#include "configini.h"
+
+#define CONFIG_FILE "Config\\Serial-Input.ini"
+
+static Config *l_ConfigInput;
+#endif
+
 /* global data definitions */
 SController controller[4];  // 4 controllers
 
+#ifndef PROJECT_64
 /* static data definitions */
 static void (*l_DebugCallback)(void *, int, const char *) = NULL;
 static void *l_DebugCallContext = NULL;
@@ -22,7 +31,9 @@ ptr_ConfigSaveSection      ConfigSaveSection = NULL;
 ptr_ConfigSetDefaultInt    ConfigSetDefaultInt = NULL;
 ptr_ConfigSetDefaultString ConfigSetDefaultString = NULL;
 ptr_ConfigGetParamInt      ConfigGetParamInt = NULL;
+ptr_ConfigGetParamBool     ConfigGetParamBool = NULL;
 ptr_ConfigGetParamString   ConfigGetParamString = NULL;
+#endif
 
 /* Global functions */
 void DebugMessage(int level, const char *message, ...)
@@ -30,16 +41,118 @@ void DebugMessage(int level, const char *message, ...)
 	char msgbuf[1024];
 	va_list args;
 
+#ifndef PROJECT_64
 	if (l_DebugCallback == NULL)
 		return;
+#endif
 
 	va_start(args, message);
 	vsprintf(msgbuf, message, args);
 
+#ifdef PROJECT_64
+	printf("%s\n", msgbuf);
+#else
 	(*l_DebugCallback)(l_DebugCallContext, level, msgbuf);
+#endif
 
 	va_end(args);
 }
+
+void InitializeComPorts()
+{
+	int devices = comEnumerate();
+
+	for (int i = 0; i < comGetNoPorts(); i++)
+		DebugMessage(M64MSG_INFO, "com[%i]: %s", i, comGetPortName(i));
+
+	DebugMessage(M64MSG_INFO, "Found %i serial devices", devices);
+}
+
+#ifdef PROJECT_64
+
+EXPORT void PluginLoaded(void)
+{
+	InitializeComPorts();
+
+	l_ConfigInput = ConfigNew();
+
+	/* set settings */
+	ConfigSetBoolString(l_ConfigInput, "true", "false");
+
+	if (ConfigReadFile(CONFIG_FILE, &l_ConfigInput) != CONFIG_OK)
+		printf("ConfigOpenFile failed for " CONFIG_FILE);
+
+	if (!ConfigHasSection(l_ConfigInput, "Controller 1")) {
+		ConfigAddBool(l_ConfigInput, "Controller 1", "Enabled", false);
+		ConfigAddString(l_ConfigInput, "Controller 1", "Serial", "COM1");
+		ConfigAddInt(l_ConfigInput, "Controller 1", "Baud", 115200);
+	}
+
+	if (!ConfigHasSection(l_ConfigInput, "Controller 2")) {
+		ConfigAddBool(l_ConfigInput, "Controller 2", "Enabled", false);
+		ConfigAddString(l_ConfigInput, "Controller 2", "Serial", "COM2");
+		ConfigAddInt(l_ConfigInput, "Controller 2", "Baud", 115200);
+	}
+
+	if (!ConfigHasSection(l_ConfigInput, "Controller 3")) {
+		ConfigAddBool(l_ConfigInput, "Controller 3", "Enabled", false);
+		ConfigAddString(l_ConfigInput, "Controller 3", "Serial", "COM3");
+		ConfigAddInt(l_ConfigInput, "Controller 3", "Baud", 115200);
+	}
+
+	if (!ConfigHasSection(l_ConfigInput, "Controller 4")) {
+		ConfigAddBool(l_ConfigInput, "Controller 4", "Enabled", false);
+		ConfigAddString(l_ConfigInput, "Controller 4", "Serial", "COM4");
+		ConfigAddInt(l_ConfigInput, "Controller 4", "Baud", 115200);
+	}
+
+	ConfigPrintToFile(l_ConfigInput, CONFIG_FILE);
+}
+
+EXPORT void CloseDLL(void)
+{
+	comTerminate();
+	ConfigFree(l_ConfigInput);
+}
+
+BOOL APIENTRY DllMain(HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:;
+		break;
+
+	case DLL_THREAD_ATTACH:
+		break;
+
+	case DLL_THREAD_DETACH:
+		break;
+
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
+}
+
+/******************************************************************
+Function: GetDllInfo
+Purpose:  This function allows the emulator to gather information
+about the dll by filling in the PluginInfo structure.
+input:    a pointer to a PLUGIN_INFO stucture that needs to be
+filled by the function. (see def above)
+output:   none
+*******************************************************************/
+EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
+{
+#ifdef _DEBUG
+	sprintf(PluginInfo->Name, "Direct Serial Input (Debug): %i.%i.%i", VERSION_PRINTF_SPLIT(PLUGIN_VERSION));
+#else
+	sprintf(PluginInfo->Name, "Direct Serial Input: %i.%i.%i", VERSION_PRINTF_SPLIT(PLUGIN_VERSION));
+#endif
+	PluginInfo->Type = PLUGIN_TYPE_CONTROLLER;
+	PluginInfo->Version = INPUT_API_VERSION_PJ64;
+}
+#else
 
 /* Mupen64Plus plugin functions */
 EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Context, void (*DebugCallback)(void *, int, const char *))
@@ -75,10 +188,11 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 	ConfigSaveSection = (ptr_ConfigSaveSection) DLSYM(CoreLibHandle, "ConfigSaveSection");
 	ConfigSetDefaultInt = (ptr_ConfigSetDefaultInt) DLSYM(CoreLibHandle, "ConfigSetDefaultInt");
 	ConfigSetDefaultString = (ptr_ConfigSetDefaultString) DLSYM(CoreLibHandle, "ConfigSetDefaultString");
-	ConfigGetParamInt = (ptr_ConfigGetParamInt) DLSYM(CoreLibHandle, "ConfigGetParamInt");
+	ConfigGetParamInt = (ptr_ConfigGetParamInt)DLSYM(CoreLibHandle, "ConfigGetParamInt");
+	ConfigGetParamBool = (ptr_ConfigGetParamBool)DLSYM(CoreLibHandle, "ConfigGetParamBool");
 	ConfigGetParamString = (ptr_ConfigGetParamString) DLSYM(CoreLibHandle, "ConfigGetParamString");
 
-	if (!ConfigOpenSection || !ConfigSaveSection || !ConfigSetDefaultInt || !ConfigSetDefaultString|| !ConfigGetParamInt || !ConfigGetParamString)
+	if (!ConfigOpenSection || !ConfigSaveSection || !ConfigSetDefaultInt || !ConfigSetDefaultString|| !ConfigGetParamInt || !ConfigGetParamBool || !ConfigGetParamString)
 		return M64ERR_INCOMPATIBLE;
 
 	if (ConfigOpenSection("Input-Serial", &l_ConfigInput) != M64ERR_SUCCESS)
@@ -98,12 +212,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 	ConfigSetDefaultInt(l_ConfigInput, "Baud4", 115200, "Baud rate for controller 4");
 	ConfigSaveSection("Input-Serial");
 
-	int devices = comEnumerate();
-
-	for (int i=0; i<comGetNoPorts(); i++)
-		printf("com[%i]: %s\n", i, comGetPortName(i));
-
-	printf("Found %i serial devices\n", devices);
+	InitializeComPorts();
 
 	l_PluginInit = 1;
 	return M64ERR_SUCCESS;
@@ -141,6 +250,8 @@ EXPORT m64p_error CALL PluginGetVersion(m64p_plugin_type *PluginType, int *Plugi
 	return M64ERR_SUCCESS;
 }
 
+#endif
+
 /******************************************************************
 	Function: InitiateControllers
 	Purpose:  This function initialises how each of the controllers
@@ -161,21 +272,38 @@ EXPORT void CALL InitiateControllers(CONTROL_INFO ControlInfo)
 		// this small struct tells the core whether each controller is plugged in, and what type of pak is connected
 		controller[i].control = ControlInfo.Controls;
 
-		char serial_param_buf[8];
-		sprintf(serial_param_buf, "Serial%d", i+1);
-		char baud_param_buf[6];
-		sprintf(baud_param_buf, "Baud%d", i+1);
+#ifdef PROJECT_64
+		char serial_sec_buf[13];
+		sprintf(serial_sec_buf, "Controller %d", i + 1);
 
+		bool enabled;
+		char serial[1024];
+		int baud;
+
+		ConfigReadBool(l_ConfigInput, serial_sec_buf, "Enabled", &enabled, false);
+		ConfigReadString(l_ConfigInput, serial_sec_buf, "Serial", serial, sizeof(serial), "COM1");
+		ConfigReadInt(l_ConfigInput, serial_sec_buf, "Baud", &baud, 115200);
+#else
+		char enabled_param_buf[9];
+		sprintf(enabled_param_buf, "Enabled%d", i + 1);
+
+		char serial_param_buf[8];
+		sprintf(serial_param_buf, "Serial%d", i + 1);
+		char baud_param_buf[6];
+		sprintf(baud_param_buf, "Baud%d", i + 1);
+
+		int enabled = ConfigGetParamBool(l_ConfigInput, enabled_param_buf);
 		const char* serial	= ConfigGetParamString(l_ConfigInput, serial_param_buf);
 		int baud	= ConfigGetParamInt(l_ConfigInput, baud_param_buf);
+#endif
 
-		if (serial && baud)
+		if (enabled && serial && baud)
 		{
 			int port = comFindPort(serial);
 
 			if (port >= 0 && comOpen(port, baud) != 0)
 			{
-				printf("Assigned controller %i to serial port %s\n", i+1, serial);
+				DebugMessage(M64MSG_INFO, "Assigned controller %i to serial port %s", i+1, serial);
 
 				// init controller
 				controller[i].control->Present = 1;
