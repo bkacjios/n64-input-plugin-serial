@@ -39,7 +39,10 @@ extern "C" {
 
     #include <stdint.h>
     #include <stdlib.h>
+
+#ifdef _WIN32
 	#include <Windows.h>
+#endif
 
 /*****************************************************************************/
     /* Doxywizard specific */

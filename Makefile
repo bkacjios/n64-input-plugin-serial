@@ -53,9 +53,11 @@ ifneq ("$(filter x86_64 amd64,$(HOST_CPU))","")
   CPU := X86
   ifeq ("$(BITS)", "32")
     ARCH_DETECTED := 64BITS_32
+    POSTFIX := x86
     PIC ?= 0
   else
     ARCH_DETECTED := 64BITS
+    POSTFIX := x86_64
     PIC ?= 1
   endif
 endif
@@ -181,7 +183,7 @@ ifeq ($(PLUGINDIR),)
 endif
 
 SRCDIR = src
-OBJDIR = _obj$(POSTFIX)
+OBJDIR = _obj/$(POSTFIX)/
 
 # include luajit
 CFLAGS += -I$(SRCDIR)/rs232/
@@ -197,7 +199,7 @@ OBJDIRS = $(dir $(OBJECTS))
 $(shell $(MKDIR) $(OBJDIRS))
 
 # build targets
-TARGET = mupen64plus-input-serial$(POSTFIX).$(SO_EXTENSION)
+TARGET = mupen64plus-input-serial-$(POSTFIX).$(SO_EXTENSION)
 
 targets:
 	@echo "Mupen64Plus-input-serial makefile. "

@@ -29,6 +29,7 @@ static m64p_handle l_ConfigInput;
 ptr_ConfigOpenSection      ConfigOpenSection = NULL;
 ptr_ConfigSaveSection      ConfigSaveSection = NULL;
 ptr_ConfigSetDefaultInt    ConfigSetDefaultInt = NULL;
+ptr_ConfigSetDefaultBool   ConfigSetDefaultBool = NULL;
 ptr_ConfigSetDefaultString ConfigSetDefaultString = NULL;
 ptr_ConfigGetParamInt      ConfigGetParamInt = NULL;
 ptr_ConfigGetParamBool     ConfigGetParamBool = NULL;
@@ -187,6 +188,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 	ConfigOpenSection = (ptr_ConfigOpenSection) DLSYM(CoreLibHandle, "ConfigOpenSection");
 	ConfigSaveSection = (ptr_ConfigSaveSection) DLSYM(CoreLibHandle, "ConfigSaveSection");
 	ConfigSetDefaultInt = (ptr_ConfigSetDefaultInt) DLSYM(CoreLibHandle, "ConfigSetDefaultInt");
+	ConfigSetDefaultBool = (ptr_ConfigSetDefaultBool) DLSYM(CoreLibHandle, "ConfigSetDefaultBool");
 	ConfigSetDefaultString = (ptr_ConfigSetDefaultString) DLSYM(CoreLibHandle, "ConfigSetDefaultString");
 	ConfigGetParamInt = (ptr_ConfigGetParamInt)DLSYM(CoreLibHandle, "ConfigGetParamInt");
 	ConfigGetParamBool = (ptr_ConfigGetParamBool)DLSYM(CoreLibHandle, "ConfigGetParamBool");
@@ -201,14 +203,20 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 		return M64ERR_INPUT_NOT_FOUND;
 	}
 
+	ConfigSetDefaultBool(l_ConfigInput, "Enabled1", 0, "Set controller 1 on or off");
 	ConfigSetDefaultString(l_ConfigInput, "Serial1", "ttyACM0", "Serial device for controller");
-	ConfigSetDefaultString(l_ConfigInput, "Serial2", "ttyACM1", "Serial device for controller");
-	ConfigSetDefaultString(l_ConfigInput, "Serial3", "ttyACM2", "Serial device for controller");
-	ConfigSetDefaultString(l_ConfigInput, "Serial4", "ttyACM3", "Serial device for controller");
-
 	ConfigSetDefaultInt(l_ConfigInput, "Baud1", 115200, "Baud rate for controller 1");
+
+	ConfigSetDefaultBool(l_ConfigInput, "Enabled2", 0, "Set controller 2 on or off");
+	ConfigSetDefaultString(l_ConfigInput, "Serial2", "ttyACM1", "Serial device for controller");
 	ConfigSetDefaultInt(l_ConfigInput, "Baud2", 115200, "Baud rate for controller 2");
+
+	ConfigSetDefaultBool(l_ConfigInput, "Enabled3", 0, "Set controller 3 on or off");
+	ConfigSetDefaultString(l_ConfigInput, "Serial3", "ttyACM2", "Serial device for controller");
 	ConfigSetDefaultInt(l_ConfigInput, "Baud3", 115200, "Baud rate for controller 3");
+
+	ConfigSetDefaultBool(l_ConfigInput, "Enabled4", 0, "Set controller 4 on or off");
+	ConfigSetDefaultString(l_ConfigInput, "Serial4", "ttyACM3", "Serial device for controller");
 	ConfigSetDefaultInt(l_ConfigInput, "Baud4", 115200, "Baud rate for controller 4");
 	ConfigSaveSection("Input-Serial");
 

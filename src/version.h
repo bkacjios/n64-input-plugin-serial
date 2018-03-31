@@ -3,6 +3,7 @@
 
 #define PLUGIN_NAME				"Mupen64Plus Serial Input Plugin"
 #define PLUGIN_VERSION			0x00002
+#define PLUGIN_CFG_VERSION		2
 #define INPUT_API_VERSION		0x20001
 #define INPUT_API_VERSION_PJ64	0x0101
 #define CONFIG_API_VERSION		0x20100
